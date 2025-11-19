@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    /* Wait for element */
     function waitForSelector(selector) {
         return new Promise(resolve => {
             const existing = document.querySelector(selector);
@@ -18,7 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    /* Seat Logic */
     function applySeatLogic() {
         const events = document.querySelectorAll(".am-ec__info-other");
         if (!events.length) return;
@@ -30,7 +28,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!numberEl || !availabilityEl || !capacityTextEl) return;
 
             const seats = parseInt(numberEl.textContent.trim(), 10);
-
             const applyColor = c => {
                 availabilityEl.style.color = c;
                 numberEl.style.color = c;
@@ -65,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    /* Add Flash CSS */
+    // Add Flash CSS
     if (!document.getElementById("flash-keyframes")) {
         const style = document.createElement("style");
         style.id = "flash-keyframes";
@@ -79,26 +76,25 @@ document.addEventListener("DOMContentLoaded", function () {
         document.head.appendChild(style);
     }
 
-    /* Watch popup → then watch Amelia */
-    async function watchModalAndRun() {
-        const modal = await waitForSelector(".oia-booking-modal__body");
-
-        // WATCH the Amelia wrapper, not just once
-        const ameliaWrapperObserver = new MutationObserver(() => {
-            const eventsLoaded = document.querySelector(".am-ec__info-other");
-            if (eventsLoaded) {
-                setTimeout(() => {
-                    console.log("🔄 DOM updated → Reapply seat logic");
-                    applySeatLogic();
-                }, 50); // small delay allows Amelia's JS to finish rendering
+    // **Global observer for dynamically added .am-ec__info-other**
+    const globalObserver = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType === 1) { // only element nodes
+                    if (node.matches(".am-ec__info-other") || node.querySelector(".am-ec__info-other")) {
+                        applySeatLogic();
+                    }
+                }
             }
-        });
+        }
+    });
 
-        ameliaWrapperObserver.observe(modal, {
-            childList: true,
-            subtree: true
-        });
-    }
+    globalObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
 
-    watchModalAndRun();
+    // Also run immediately for any existing elements
+    applySeatLogic();
+
 });
